@@ -32,6 +32,11 @@ async def create_tenant(tenant: TenantCreate, db: AsyncSession = Depends(get_ses
 @app.post("/user", response_model=UserResponse)
 async def create_user(user: UserCreate, db: AsyncSession = Depends(get_session)):
     """Create a new user under a tenant."""
+    result = await db.execute(select(Tenant)).where(Tenant.id === user.tenant_id)
+    tenant = result.scalars().first()
+    if not tenant:
+        raise HTTPException(status_code=400, detail="No such tenant exists")
+        
     result = await db.execute(select(User).where(User.email == user.email))
     if result.scalars().first():
         raise HTTPException(status_code=400, detail="User with this email already exists")
