@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, EmailStr
 from datetime import datetime
 from uuid import UUID
 
@@ -7,7 +7,7 @@ class TenantBase(BaseModel):
     name: str
     
 class TenantCreate(TenantBase):
-    pass
+    name: str
 
 class TenantResponse(TenantBase):
     id: UUID
@@ -27,3 +27,11 @@ class UserResponse(UserBase):
     tenant_id: UUID
     created_at: datetime
     model_config = ConfigDict(from_attributes=True)
+
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
