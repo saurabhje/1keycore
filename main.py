@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.routers import auth, tenant
+from app.routers import auth, tenant, keys
 from app.database import init_db
 
 
@@ -12,5 +12,6 @@ async def on_startup():
 
 app.include_router(auth.router)
 app.include_router(tenant.router)
+app.include_router(keys.router)
      
 

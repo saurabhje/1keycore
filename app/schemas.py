@@ -35,3 +35,14 @@ class UserLogin(BaseModel):
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
+
+class APIKeyCreate(BaseModel):
+    provider: str
+    api_key: str
+
+class APIKeyResponse(BaseModel):
+    id: UUID
+    tenant_id: UUID
+    provider: str
+    created_at: datetime
+    model_config = ConfigDict(from_attributes=True)

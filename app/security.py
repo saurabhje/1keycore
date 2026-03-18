@@ -2,10 +2,11 @@ import bcrypt
 from jose import jwt, JWTError
 from datetime import datetime, timedelta
 from fastapi import HTTPException
-import os
+from cryptography.fernet import Fernet
 from .config import settings
 
 SECRET_KEY = settings.SECRET_KEY
+ENCRYPTION_KEY = settings.ENCRYPTION_KEY
 ALGORITHM = "HS256"
 TOKEN_EXPIRE_HOURS = 24
 
@@ -36,3 +37,11 @@ def decode_jwt_token(token: str) -> dict:
         return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
     except JWTError:
         raise HTTPException(status_code=401, detail="Invalid or expired token")
+    
+def encrypt_api_key(key: str) -> str:
+    f = Fernet(ENCRYPTION_KEY.encode())
+    return f.encrypt(key.encode()).decode()
+
+def decrypt_api_key(key: str) -> str:
+    f = Fernet(ENCRYPTION_KEY.encode())
+    return f.decrypt(key.encode()).decode()

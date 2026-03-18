@@ -10,21 +10,26 @@ class Tenant(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String, unique=True, index=True, nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
+    admin_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    users = relationship("User", back_populates="tenant")
+    api_keys = relationship("TenantAPIKey", back_populates="tenant")
 
 class User(Base):
     __tablename__ = "users"
-    # move primary_key and default to Column, not UUID
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     email = Column(String, unique=True, index=True, nullable=False)
     hashed_password = Column(String, nullable=False)
     tenant_id = Column(UUID(as_uuid=True), ForeignKey("tenants.id"), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    tenant = relationship("Tenant", back_populates="users")
+    tenant = relationship("Tenant", back_populates="users", foreign_keys=[tenant_id])
 
+Tenant.users = relationship("User", back_populates="tenant", foreign_keys=[User.tenant_id])
 
-
-
-
-
+class TenantAPIKey(Base):
+    __tablename__ = "tenant_api_keys"
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    tenant_id = Column(UUID(as_uuid=True), ForeignKey("tenants.id"), nullable=False)
+    provider = Column(String, nullable=False)
+    encrypted_key = Column(String, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    tenant = relationship("Tenant", back_populates="api_keys")

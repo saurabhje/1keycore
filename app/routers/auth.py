@@ -29,6 +29,10 @@ async def register(user: UserCreate, db: AsyncSession = Depends(get_session)):
         tenant_id=user.tenant_id
     )
     db.add(new_user)
+    await db.flush()
+    if not tenant.admin_id:
+        tenant.admin_id = new_user.id
+        
     await db.commit()
     await db.refresh(new_user)
     return new_user
