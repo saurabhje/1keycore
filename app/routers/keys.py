@@ -9,7 +9,7 @@ from app.schemas import APIKeyCreate, APIKeyResponse
 
 router = APIRouter(prefix="/keys", tags=["keys"])
 
-SUPPORTED_PROVIDERS = ["openai", "anthropic", "gemini"]
+SUPPORTED_PROVIDERS = ["openai", "anthropic", "gemini", "groq", "mistral", "cohere"]
 
 @router.post("/", response_model=APIKeyResponse)
 async def register_api_key(

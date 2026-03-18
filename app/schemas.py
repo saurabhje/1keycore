@@ -46,3 +46,11 @@ class APIKeyResponse(BaseModel):
     provider: str
     created_at: datetime
     model_config = ConfigDict(from_attributes=True)
+
+class ChatRequest(BaseModel):
+    message: str
+    model: str
+
+class ChatResponse(BaseModel):
+    response: str
+    model: str
