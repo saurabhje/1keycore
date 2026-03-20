@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.database import get_session
 from app.models import TenantAPIKey, User
-from app.deps import get_admin_user
+from app.dependencies import get_admin_user
 from app.security import encrypt_api_key
 from app.schemas import APIKeyCreate, APIKeyResponse
 

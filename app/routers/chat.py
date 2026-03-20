@@ -1,6 +1,6 @@
 from fastapi import HTTPException, Depends, APIRouter
 from app.schemas import ChatRequest, ChatResponse
-from app.deps import get_current_user
+from app.dependencies import get_current_user
 from app.models import User, TenantAPIKey
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
