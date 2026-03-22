@@ -7,27 +7,18 @@ from sqlalchemy import select
 from app.database import get_session
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.security import decrypt_api_key
-import httpx
+from app.helpers.rate_limiter import check_rpm_token_bucket, check_tpm, concurrency_acquire, release_concurrency
+from app.helpers.redis_keys import RedisKeys
+from app.helpers.constants import PROVIDER_MODELS, PROVIDER_URLS
+from app.helpers.providers import call_anthropic, call_cohere, call_gemini, call_openai
 
 router = APIRouter(prefix="/chat", tags=["chat"])
-
-PROVIDER_URLS = {
-    "openai":    "https://api.openai.com/v1/chat/completions",
-    "anthropic": "https://api.anthropic.com/v1/messages",
-    "gemini":    "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
-    "groq":      "https://api.groq.com/openai/v1/chat/completions",
-    "mistral":   "https://api.mistral.ai/v1/chat/completions",
-    "cohere":    "https://api.cohere.com/v2/chat",
-}
-
-PROVIDER_MODELS = {
-    "openai":    ["gpt-4o", "gpt-4o-mini", "gpt-3.5-turbo"],
-    "anthropic": ["claude-3-5-sonnet-20241022", "claude-3-haiku-20240307"],
-    "gemini":    ["gemini-1.5-pro", "gemini-1.5-flash"],
-    "groq":      ["llama-3.3-70b-versatile", "mixtral-8x7b-32768"],
-    "mistral":   ["mistral-large-latest", "mistral-small-latest"],
-    "cohere":    ["command-r-plus", "command-r"],
-}
+user_rpm = 20
+tenant_rpm = 200
+conc_limit_user = 3
+conc_limit_tenant = 20
+tpm_limit_user = 1000
+tpm_limit_tenant = 5000
 
 def get_provider(model: str) -> str:
     for provider, models in PROVIDER_MODELS.items():
@@ -41,119 +32,49 @@ async def chat(
         current_user: User = Depends(get_current_user),
         db: AsyncSession = Depends(get_session)
 ):
-    provider = get_provider(request.model)
-    result = await db.execute(
-        select(TenantAPIKey).where(
-            TenantAPIKey.tenant_id == current_user.tenant_id,
-            TenantAPIKey.provider == provider
-        )
-    )
-    tenant_key = result.scalars().first()
-    if not tenant_key:
-        raise HTTPException(
-            status_code=400,
-            detail=f"No {provider} API Key registered for your organization"
-        )
+    user_id = str(current_user.id)
+    tenant_id = str(current_user.tenant_id)
+
+    if not check_rpm_token_bucket(RedisKeys.rpm_tenant(tenant_id), tenant_rpm):
+        raise HTTPException(status_code=429, detail="Tenant RPM limit exceeded")
+    if not check_rpm_token_bucket(RedisKeys.rpm_user(tenant_id, user_id), user_rpm):
+        raise HTTPException(status_code=429, detail="User RPM limit exceeded")
+    if not check_tpm(RedisKeys.tpm_tenant(tenant_id), tpm_limit_tenant, 100):
+        raise HTTPException(status_code=429, detail="Tenant TPM limit exceeded")
+    if not check_tpm(RedisKeys.tpm_user(tenant_id, user_id), tpm_limit_user, 100):
+        raise HTTPException(status_code=429, detail="User TPM limit exceeded")
+    if not concurrency_acquire(RedisKeys.concurrency_tenant(tenant_id), conc_limit_tenant):
+        raise HTTPException(status_code=429, detail="Tenant concurrency limit exceeded")
+    if not concurrency_acquire(RedisKeys.concurrency_user(tenant_id, user_id), conc_limit_user):
+        release_concurrency(RedisKeys.concurrency_tenant(tenant_id))
+        raise HTTPException(status_code=429, detail="User concurrency limit exceeded")
     
-    api_key = decrypt_api_key(tenant_key.encrypted_key)
-    if provider == "openai":
-        return await call_openAI(api_key, request.model, request.message, PROVIDER_URLS["openai"])
-    elif provider == "anthropic":
-        return await call_anthropic(api_key, request.model, request.message)
-    elif provider == "gemini":
-        return await call_gemini(api_key, request.model, request.message)
-    elif provider in ["groq", "mistral"]:
-        return await call_openAI(api_key, request.model, request.message, url=PROVIDER_URLS[provider])
-    elif provider == "cohere":
-        return await call_cohere(api_key, request.model, request.message)
-    
-
-async def call_openAI(api_key: str, model: str, message: str, url: str = PROVIDER_URLS["openai"]) -> dict:
-    async with httpx.AsyncClient() as client:
-        response = await client.post(
-            url,
-            headers={
-                "Authorization": f"Bearer {api_key}",
-                "Content-Type": "application/json"
-            },
-            json={
-                "model": model,
-                "messages": [{"role": "user", "content": message}]
-            },
-            timeout=30.0
+    try:
+        provider = get_provider(request.model)
+        result = await db.execute(
+            select(TenantAPIKey).where(
+                TenantAPIKey.tenant_id == current_user.tenant_id,
+                TenantAPIKey.provider == provider
+            )
         )
-        if response.status_code != 200:
-            raise HTTPException(status_code=response.status_code, detail=response.json())
-        data = response.json()
-        return {
-            "response": data["choices"][0]["message"]["content"],
-            "model": model
-        }
-
-async def call_anthropic(api_key: str, model: str, message: str) -> dict:
-    async with httpx.AsyncClient() as client:
-        response = await client.post(
-            PROVIDER_URLS["anthropic"],
-            headers={
-                "x-api-key": api_key,
-                "anthropic-version": "2023-06-01",
-                "Content-Type": "application/json"
-            },
-            json={
-                "model": model,
-                "max_tokens": 1024,
-                "messages": [{"role": "user", "content": message}]
-            },
-            timeout=30.0
-        )
-        if response.status_code != 200:
-            raise HTTPException(status_code=response.status_code, detail=response.json())
-        data = response.json()
-        return {
-            "response": data["content"][0]["text"],
-            "model": model
-        }
-
-async def call_gemini(api_key: str, model: str, message: str) -> dict:
-    async with httpx.AsyncClient() as client:
-        url = PROVIDER_URLS["gemini"].format(model=model)
-        response = await client.post(
-            f"{url}?key={api_key}",
-            json={
-                "contents": [{"parts": [{"text": message}]}]
-            },
-            timeout=30.0
-        )
-        if response.status_code != 200:
-            raise HTTPException(status_code=response.status_code, detail=response.json())
-        data = response.json()
-        return {
-            "response": data["candidates"][0]["content"]["parts"][0]["text"],
-            "model": model
-        }
-
-async def call_cohere(api_key: str, model: str, message: str) -> dict:
-    async with httpx.AsyncClient() as client:
-        response = await client.post(
-            PROVIDER_URLS["cohere"],
-            headers={
-                "Authorization": f"Bearer {api_key}",
-                "Content-Type": "application/json"
-            },
-            json={
-                "model": model,
-                "messages": [{"role": "user", "content": message}]
-            },
-            timeout=30.0
-        )
-        if response.status_code != 200:
-            raise HTTPException(status_code=response.status_code, detail=response.json())
-        data = response.json()
-        return {
-            "response": data["message"]["content"][0]["text"],
-            "model": model
-        }
-
-
-
-
+        tenant_key = result.scalars().first()
+        if not tenant_key:
+            raise HTTPException(
+                status_code=400,
+                detail=f"No {provider} API Key registered for your organization"
+            )
+        
+        api_key = decrypt_api_key(tenant_key.encrypted_key)
+        if provider == "openai":
+            return await call_openai(api_key, request.model, request.message, PROVIDER_URLS["openai"])
+        elif provider == "anthropic":
+            return await call_anthropic(api_key, request.model, request.message)
+        elif provider == "gemini":
+            return await call_gemini(api_key, request.model, request.message)
+        elif provider in ["groq", "mistral"]:
+            return await call_openai(api_key, request.model, request.message, url=PROVIDER_URLS[provider])
+        elif provider == "cohere":
+            return await call_cohere(api_key, request.model, request.message)
+    finally:
+        release_concurrency(RedisKeys.concurrency_tenant(tenant_id))
+        release_concurrency(RedisKeys.concurrency_user(tenant_id, user_id))

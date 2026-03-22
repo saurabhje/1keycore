@@ -100,17 +100,17 @@ Every request is logged: tenant, user, model, provider, tokens in, tokens out, e
 ```
 ┌─────────────────────────────────────────┐
 │           Tenant (Acme Corp)            │
-│  Admin registers keys  │  Users chat   │
+│  Admin registers keys  │  Users chat    │
 └────────────┬───────────────────┬────────┘
              │ POST /keys        │ POST /chat
              ▼                   ▼
 ┌─────────────────────────────────────────┐
 │              Gatewise Gateway           │
-│  ┌──────────┐ ┌──────────┐ ┌─────────┐ │
-│  │   Rate   │ │ Semantic │ │  Usage  │ │
-│  │ Limiter  │ │  Cache   │ │ Tracker │ │
-│  │  Redis   │ │ pgvector │ │Postgres │ │
-│  └──────────┘ └──────────┘ └─────────┘ │
+│  ┌──────────┐ ┌──────────┐ ┌─────────┐  │
+│  │   Rate   │ │ Semantic │ │  Usage  │  │
+│  │ Limiter  │ │  Cache   │ │ Tracker │  │
+│  │  Redis   │ │ pgvector │ │Postgres │  │
+│  └──────────┘ └──────────┘ └─────────┘  │
 │         ┌───────────────────┐           │
 │         │   Model Router    │           │
 │         │  Decrypts key     │           │
