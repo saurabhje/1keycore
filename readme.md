@@ -1,23 +1,23 @@
-# Gatewise
+# 1keycore
 
 > Multi-tenant LLM gateway — bring your own keys, control your usage.
 
-Gatewise is a backend infrastructure layer that sits between your application and LLM providers. Companies (tenants) register their own API keys, their users send requests, and Gatewise handles routing, rate limiting, caching, and usage tracking — all isolated per tenant.
+1keycore is a powerful backend infrastructure layer that sits between your application and LLM providers. Companies (tenants) register their own API keys, their users send requests, and 1keycore handles routing, rate limiting, caching, and usage tracking — all isolated per tenant.
 
-Built as a learning project to understand how LLM infrastructure works at scale. Inspired by tools like Portkey and Helicone.
+Built as a scalable SaaS solution to streamline LLM infrastructure at scale. Inspired by leading tools like Portkey and Helicone.
 
 ---
 
-## Why Gatewise?
+## Why 1keycore?
 
-If a company wants to give their employees access to LLMs, the naive approach is handing out API keys directly. That creates problems:
+In today's fast-paced AI landscape, organizations need secure, efficient ways to manage access to Large Language Models (LLMs). The traditional approach of distributing API keys directly to users leads to significant challenges:
 
-- **No control** — any employee can spend unlimited budget
-- **No visibility** — no idea who used what, how much it cost
-- **Security risk** — API keys get leaked, committed to git, shared on Slack
-- **No flexibility** — switching models requires updating every client
+- **Lack of Control** — users can incur unlimited costs without oversight
+- **Poor Visibility** — No insights into usage, costs, or performance metrics
+- **Security Risks** — API keys are prone to leaks, accidental commits, or unauthorized sharing
+- **Limited Flexibility** — Switching models or providers requires client-side updates
 
-Gatewise solves all of this in one backend layer.
+1keycore eliminates these issues by providing a centralized, secure gateway for LLM API management. Empower your team with controlled access while maintaining full visibility and security.
 
 ---
 
@@ -52,10 +52,10 @@ Tenant admin registers their OpenAI / Anthropic / Gemini / Groq / Mistral / Cohe
 Every tenant is completely isolated. Data, keys, rate limits, and usage logs never bleed across organizations. Enforced at the database level on every query.
 
 ### BYOK — Bring Your Own Key
-Tenants register their own LLM provider keys. Keys are stored AES-encrypted using Fernet symmetric encryption. The raw key is never returned after registration. Gatewise never pays for LLM calls — the tenant's key is always used.
+Tenants register their own LLM provider keys. Keys are stored AES-encrypted using Fernet symmetric encryption. The raw key is never returned after registration. 1keycore never pays for LLM calls — the tenant's key is always used.
 
 ### Model Routing
-Users specify a model name (`gpt-4o`, `claude-sonnet`, `llama-3.3-70b`). Gatewise resolves the correct provider, fetches the tenant's key for that provider, and routes the request. Switching models requires zero code changes on the client side.
+Users specify a model name (`gpt-4o`, `claude-sonnet`, `llama-3.3-70b`). 1keycore resolves the correct provider, fetches the tenant's key for that provider, and routes the request. Switching models requires zero code changes on the client side.
 
 ### Rate Limiting
 Per-tenant rate limiting using Redis sliding window counters. Tenants can be configured with different limits — free tier, pro tier, enterprise. Returns `429 Too Many Requests` with a `Retry-After` header when exceeded.
@@ -67,6 +67,15 @@ Incoming prompts are embedded and compared against cached responses using pgvect
 Every request is logged: tenant, user, model, provider, tokens in, tokens out, estimated cost, latency, cache hit or miss. Tenant admins can query their usage and cost breakdown via the API.
 
 ---
+
+## Key Benefits
+
+- **Cost Control**: Prevent budget overruns with per-tenant rate limiting and detailed usage analytics.
+- **Enhanced Security**: AES-encrypted API keys with zero-trust architecture ensure your credentials stay safe.
+- **Scalability**: Built with async FastAPI and PostgreSQL for high-performance, concurrent requests.
+- **Developer-Friendly**: Simple API endpoints for seamless integration into existing applications.
+- **Multi-Provider Support**: Route to any supported LLM provider without code changes.
+- **Intelligent Caching**: Reduce costs and latency with semantic similarity-based response caching.
 
 ## Supported Providers
 
@@ -105,7 +114,7 @@ Every request is logged: tenant, user, model, provider, tokens in, tokens out, e
              │ POST /keys        │ POST /chat
              ▼                   ▼
 ┌─────────────────────────────────────────┐
-│              Gatewise Gateway           │
+│              1keycore Gateway           │
 │  ┌──────────┐ ┌──────────┐ ┌─────────┐  │
 │  │   Rate   │ │ Semantic │ │  Usage  │  │
 │  │ Limiter  │ │  Cache   │ │ Tracker │  │
@@ -162,8 +171,8 @@ GET /usage/cache           Cache hit rate and savings
 
 ### Installation
 ```bash
-git clone https://github.com/saurabhje/gatewise
-cd gatewise
+git clone https://github.com/saurabhje/1keycore
+cd 1keycore
 python -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
@@ -173,7 +182,7 @@ pip install -r requirements.txt
 
 Create a `.env` file:
 ```bash
-DATABASE_URL=postgresql+asyncpg://user:password@localhost/gatewise
+DATABASE_URL=postgresql+asyncpg://user:password@localhost/1keycore
 SECRET_KEY=your-secret-key
 ENCRYPTION_KEY=your-fernet-key
 ENV=development
@@ -195,7 +204,7 @@ API docs available at `http://localhost:8000/docs`
 
 ## Project Structure
 ```
-gatewise/
+1keycore/
 ├── main.py
 ├── requirements.txt
 ├── .env
@@ -229,9 +238,13 @@ gatewise/
 
 ---
 
-## What I Learned
+## About 1keycore
 
-Building Gatewise taught me how multi-tenant SaaS backends work in practice — tenant isolation, encrypted credential storage, per-tenant rate limiting, and semantic similarity search. Every design decision has a reason behind it that I can explain.
+1keycore was developed to demonstrate best practices in building secure, scalable multi-tenant SaaS applications for AI infrastructure. It showcases advanced concepts like tenant isolation, encrypted credential management, intelligent rate limiting, and semantic caching using modern technologies.
+
+Whether you're launching a new AI platform or enhancing existing LLM workflows, 1keycore provides a robust foundation for enterprise-grade API management.
+
+**Ready to get started?** Check out the [Getting Started](#getting-started) guide or explore the API documentation.
 
 ---
 
