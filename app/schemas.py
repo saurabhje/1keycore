@@ -1,4 +1,5 @@
 from pydantic import BaseModel, ConfigDict, EmailStr
+from typing import Optional, Any
 from datetime import datetime
 from uuid import UUID
 
@@ -49,6 +50,9 @@ class APIKeyResponse(BaseModel):
 
 class ChatRequest(BaseModel):
     message: str
+    temperature: Optional[float] = 0.7
+    max_tokens: Optional[int] = 1000
+    # extra_params: Optional[dict[str, Any]] = None
     model: str
 
 class ChatResponse(BaseModel):

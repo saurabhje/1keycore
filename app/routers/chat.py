@@ -66,15 +66,15 @@ async def chat(
         
         api_key = decrypt_api_key(tenant_key.encrypted_key)
         if provider == "openai":
-            return await call_openai(api_key, request.model, request.message, PROVIDER_URLS["openai"])
+            return await call_openai(api_key, request, url=PROVIDER_URLS["openai"])
         elif provider == "anthropic":
-            return await call_anthropic(api_key, request.model, request.message)
+            return await call_anthropic(api_key, request)
         elif provider == "gemini":
-            return await call_gemini(api_key, request.model, request.message)
+            return await call_gemini(api_key, request)
         elif provider in ["groq", "mistral"]:
-            return await call_openai(api_key, request.model, request.message, url=PROVIDER_URLS[provider])
+            return await call_openai(api_key, request, url=PROVIDER_URLS[provider])
         elif provider == "cohere":
-            return await call_cohere(api_key, request.model, request.message)
+            return await call_cohere(api_key, request)
     finally:
         release_concurrency(RedisKeys.concurrency_tenant(tenant_id))
         release_concurrency(RedisKeys.concurrency_user(tenant_id, user_id))
