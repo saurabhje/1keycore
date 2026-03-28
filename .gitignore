@@ -1,4 +1,4 @@
 .env
 __pycache__/
 *.pyc
-1keycore-api/
+1keycore-api
