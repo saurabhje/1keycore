@@ -1,6 +1,6 @@
 import httpx
 from fastapi import HTTPException
-from app.helpers.constants import PROVIDER_URLS
+from app.helpers.constants import PROVIDER_URLS, DEFAULT_MAX_TOKENS
 from app.schemas import ChatRequest
 
 
@@ -9,9 +9,10 @@ async def call_openai(api_key: str, req: ChatRequest, url: str = PROVIDER_URLS["
     payload = {
         "model": req.model,
         "messages": [{"role": "user", "content": req.message}],
-        "temperature": req.temperature or 0.7,
-        "max_tokens": req.max_tokens or 1000
+        "max_tokens": req.max_tokens or DEFAULT_MAX_TOKENS
     }
+    if req.temperature is not None:
+        payload["temperature"] = req.temperature
     # if req.extra_params:
     #     payload.update(req.extra_params)
     async with httpx.AsyncClient() as client:
@@ -29,10 +30,11 @@ async def call_openai(api_key: str, req: ChatRequest, url: str = PROVIDER_URLS["
 async def call_anthropic(api_key: str, req: ChatRequest) -> dict:
     payload = {
         "model": req.model,
-        "max_tokens": req.max_tokens or 1024,
         "messages": [{"role": "user", "content": req.message}],
-        "temperature": req.temperature or 0.7
+        "max_tokens": req.max_tokens or DEFAULT_MAX_TOKENS
     }
+    if req.temperature is not None:
+        payload["temperature"] = req.temperature
     # if req.extra_params:
     #     payload.update(req.extra_params)
     async with httpx.AsyncClient() as client:
@@ -51,10 +53,11 @@ async def call_gemini(api_key: str, req: ChatRequest) -> dict:
     payload = {
         "contents": [{"parts": [{"text": req.message}]}],
         "generationConfig": {
-            "temperature": req.temperature or 0.7,
-            "maxOutputTokens": req.max_tokens or 1000
+            "maxOutputTokens": req.max_tokens or DEFAULT_MAX_TOKENS
         }
     }
+    if req.temperature is not None:
+        payload["generationConfig"]["temperature"] = req.temperature
     # if req.extra_params:
     #     payload["generationConfig"].update(req.extra_params)
     async with httpx.AsyncClient() as client:
@@ -73,9 +76,11 @@ async def call_cohere(api_key: str, req: ChatRequest) -> dict:
     payload = {
         "model": req.model,
         "messages": [{"role": "user", "content": req.message}],
-        "temperature": req.temperature or 0.7,
-        "max_tokens": req.max_tokens or 1000
+        "max_tokens": req.max_tokens or DEFAULT_MAX_TOKENS
     }
+    if req.temperature is not None:
+        payload["temperature"] = req.temperature
+
     # if req.extra_params:
     #     payload.update(req.extra_params)
     async with httpx.AsyncClient() as client:

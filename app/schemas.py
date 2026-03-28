@@ -50,11 +50,12 @@ class APIKeyResponse(BaseModel):
 
 class ChatRequest(BaseModel):
     message: str
-    temperature: Optional[float] = 0.7
-    max_tokens: Optional[int] = 1000
+    temperature: Optional[float] = None
+    max_tokens: Optional[int] = None
     # extra_params: Optional[dict[str, Any]] = None
     model: str
 
 class ChatResponse(BaseModel):
     response: str
     model: str
+    cached: bool = False

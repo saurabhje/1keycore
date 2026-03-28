@@ -9,8 +9,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.security import decrypt_api_key
 from app.helpers.rate_limiter import check_rpm_token_bucket, check_tpm, concurrency_acquire, release_concurrency
 from app.helpers.redis_keys import RedisKeys
-from app.helpers.constants import PROVIDER_MODELS, PROVIDER_URLS
+from app.helpers.constants import DEFAULT_MAX_TOKENS, PROVIDER_MODELS, PROVIDER_URLS
 from app.helpers.providers import call_anthropic, call_cohere, call_gemini, call_openai
+from app.helpers.cache import create_key, get_cache, set_cache
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 user_rpm = 20
@@ -34,7 +35,6 @@ async def chat(
 ):
     user_id = str(current_user.id)
     tenant_id = str(current_user.tenant_id)
-
     if not check_rpm_token_bucket(RedisKeys.rpm_tenant(tenant_id), tenant_rpm):
         raise HTTPException(status_code=429, detail="Tenant RPM limit exceeded")
     if not check_rpm_token_bucket(RedisKeys.rpm_user(tenant_id, user_id), user_rpm):
@@ -50,6 +50,16 @@ async def chat(
         raise HTTPException(status_code=429, detail="User concurrency limit exceeded")
     
     try:
+        should_cache = request.temperature is None or request.temperature == 0.0
+        cache_key = None
+        if should_cache:
+            cache_key = create_key(tenant_id, request.model, request.message, request.max_tokens or DEFAULT_MAX_TOKENS, request.temperature or 0.0)
+            cached_response = get_cache(cache_key)
+            if cached_response:
+                print(f"Cache hit: {cache_key}")
+                return cached_response
+            print(f"Cache miss: {cache_key}")
+
         provider = get_provider(request.model)
         result = await db.execute(
             select(TenantAPIKey).where(
@@ -66,15 +76,18 @@ async def chat(
         
         api_key = decrypt_api_key(tenant_key.encrypted_key)
         if provider == "openai":
-            return await call_openai(api_key, request, url=PROVIDER_URLS["openai"])
+            llm_response =  await call_openai(api_key, request, url=PROVIDER_URLS["openai"])
         elif provider == "anthropic":
-            return await call_anthropic(api_key, request)
+            llm_response =  await call_anthropic(api_key, request)
         elif provider == "gemini":
-            return await call_gemini(api_key, request)
+            llm_response =  await call_gemini(api_key, request)
         elif provider in ["groq", "mistral"]:
-            return await call_openai(api_key, request, url=PROVIDER_URLS[provider])
+            llm_response =  await call_openai(api_key, request, url=PROVIDER_URLS[provider])
         elif provider == "cohere":
-            return await call_cohere(api_key, request)
+            llm_response =  await call_cohere(api_key, request)
+        if should_cache:
+            set_cache(cache_key, {"response": llm_response["response"], "model": request.model, "cached": True})
+        return {"response": llm_response["response"], "model": request.model, "cached": False}
     finally:
         release_concurrency(RedisKeys.concurrency_tenant(tenant_id))
         release_concurrency(RedisKeys.concurrency_user(tenant_id, user_id))

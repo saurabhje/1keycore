@@ -15,3 +15,5 @@ PROVIDER_MODELS = {
     "mistral":   ["mistral-large-latest", "mistral-small-latest"],
     "cohere":    ["command-r-plus", "command-r"],
 }
+
+DEFAULT_MAX_TOKENS = 1024
