@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime
+from pgvector import Vector
 from sqlalchemy import Column, String, ForeignKey, Boolean, DateTime, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
@@ -33,3 +34,14 @@ class TenantAPIKey(Base):
     encrypted_key = Column(String, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     tenant = relationship("Tenant", back_populates="api_keys")
+
+class SemanticCache(Base):
+    __tablename__ = "semantic_cache"
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    tenant_id = Column(UUID(as_uuid=True), ForeignKey("tenants.id"), nullable=False)
+    model = Column(String, nullable=False)
+    query = Column(String, nullable=False)
+    embedding = Column(Vector(384))
+    message_hash = Column(String, nullable=True)
+    response = Column(String, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)

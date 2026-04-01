@@ -5,6 +5,7 @@ import json
 CACHE_TTL_SECONDS = 3600
 redis = get_redis()
 
+
 def create_key(tenant_id: str, model: str, message: str, max_tokens: int, temperature: float) -> str:
     payload = {
         "model": model.lower(),
@@ -24,5 +25,7 @@ def get_cache(key: str):
 
 def set_cache(key: str, value: str):
     redis.set(key, json.dumps(value), ex=CACHE_TTL_SECONDS)
+
+
 
 
