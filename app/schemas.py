@@ -52,7 +52,7 @@ class ChatRequest(BaseModel):
     message: str
     temperature: Optional[float] = None
     max_tokens: Optional[int] = None
-    model_prompt: Optional[str] = None
+    system_prompt: Optional[str] = None
     # extra_params: Optional[dict[str, Any]] = None
     model: str
 

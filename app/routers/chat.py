@@ -12,6 +12,7 @@ from app.helpers.redis_keys import RedisKeys
 from app.helpers.constants import DEFAULT_MAX_TOKENS, PROVIDER_MODELS, PROVIDER_URLS
 from app.helpers.providers import call_anthropic, call_cohere, call_gemini, call_openai
 from app.helpers.cache import create_key, get_cache, set_cache
+from app.helpers.semanticCache import get_semantic_cache, set_semantic_cache
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 user_rpm = 20
@@ -56,8 +57,11 @@ async def chat(
             cache_key = create_key(tenant_id, request.model, request.message, request.max_tokens or DEFAULT_MAX_TOKENS, request.temperature or 0.0)
             cached_response = get_cache(cache_key)
             if cached_response:
-                print(f"Cache hit: {cache_key}")
-                return cached_response
+                return {"response": cached_response, "model": request.model, "cached": True}
+            semantic_response = await get_semantic_cache(db, tenant_id, request.model, request.system_prompt, request.message)
+            if semantic_response:
+                return {"response": semantic_response, "model": request.model, "cached": True}
+            
             print(f"Cache miss: {cache_key}")
 
         provider = get_provider(request.model)
@@ -86,7 +90,8 @@ async def chat(
         elif provider == "cohere":
             llm_response =  await call_cohere(api_key, request)
         if should_cache:
-            set_cache(cache_key, {"response": llm_response["response"], "model": request.model, "cached": True})
+            set_cache(cache_key, llm_response["response"])
+            await set_semantic_cache(db, tenant_id, request.model, request.system_prompt, request.message, llm_response["response"])
         return {"response": llm_response["response"], "model": request.model, "cached": False}
     finally:
         release_concurrency(RedisKeys.concurrency_tenant(tenant_id))

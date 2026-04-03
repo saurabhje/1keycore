@@ -24,3 +24,4 @@ class RedisKeys:
     @staticmethod
     def concurrency_tenant(tenant_id: str):
         return f"{RedisKeys.PREFIX}:rl:conc:{tenant_id}"
+    
