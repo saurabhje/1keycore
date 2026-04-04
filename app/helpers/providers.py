@@ -25,7 +25,7 @@ async def call_openai(api_key: str, req: ChatRequest, url: str = PROVIDER_URLS["
         if response.status_code != 200:
             raise HTTPException(status_code=response.status_code, detail=response.json())
         data = response.json()
-        return {"response": data["choices"][0]["message"]["content"], "model": req.model}
+        return {"response": data["choices"][0]["message"]["content"], "model": req.model, "raw_data": data}
 
 async def call_anthropic(api_key: str, req: ChatRequest) -> dict:
     payload = {
@@ -47,7 +47,7 @@ async def call_anthropic(api_key: str, req: ChatRequest) -> dict:
         if response.status_code != 200:
             raise HTTPException(status_code=response.status_code, detail=response.json())
         data = response.json()
-        return {"response": data["content"][0]["text"], "model": req.model}
+        return {"response": data["content"][0]["text"], "model": req.model, "raw_data": data}
 
 async def call_gemini(api_key: str, req: ChatRequest) -> dict:
     payload = {
@@ -70,7 +70,7 @@ async def call_gemini(api_key: str, req: ChatRequest) -> dict:
         if response.status_code != 200:
             raise HTTPException(status_code=response.status_code, detail=response.json())
         data = response.json()
-        return {"response": data["candidates"][0]["content"]["parts"][0]["text"], "model": req.model}
+        return {"response": data["candidates"][0]["content"]["parts"][0]["text"], "model": req.model, "raw_data": data}
 
 async def call_cohere(api_key: str, req: ChatRequest) -> dict:
     payload = {
@@ -93,4 +93,4 @@ async def call_cohere(api_key: str, req: ChatRequest) -> dict:
         if response.status_code != 200:
             raise HTTPException(status_code=response.status_code, detail=response.json())
         data = response.json()
-        return {"response": data["message"]["content"][0]["text"], "model": req.model}
+        return {"response": data["message"]["content"][0]["text"], "model": req.model, "raw_data": data}

@@ -1,6 +1,7 @@
 from .redis_keys import RedisKeys
 from ..redis import get_redis
 import time
+
 redis = get_redis()
 
 def check_rpm_token_bucket(key: str, limit: int):
@@ -33,3 +34,8 @@ def concurrency_acquire(key: str, limit: int):
 
 def release_concurrency(key: str):
     redis.decr(key)
+
+def safe_decr(key: str, value: int):
+    current = int(redis.get(key) or 0)
+    new_val = max(0, current - value)
+    redis.set(key, new_val)

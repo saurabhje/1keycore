@@ -1,7 +1,7 @@
-from tiktoken import Encoding
+import tiktoken
 
 def count_tokens(text: str, system_prompt: str | None) -> int:
-    enc = Encoding.get_encoding("cl100k_base")
+    enc = tiktoken.get_encoding("cl100k_base")
     tokens = len(enc.encode(text))
     if system_prompt:
         tokens += len(enc.encode(system_prompt))

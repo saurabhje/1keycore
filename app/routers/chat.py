@@ -1,4 +1,5 @@
 from fastapi import HTTPException, Depends, APIRouter
+from app.helpers.tokens import count_tokens, extract_tokens
 from app.schemas import ChatRequest, ChatResponse
 from app.dependencies import get_current_user
 from app.models import User, TenantAPIKey
@@ -7,7 +8,7 @@ from sqlalchemy import select
 from app.database import get_session
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.security import decrypt_api_key
-from app.helpers.rate_limiter import check_rpm_token_bucket, check_tpm, concurrency_acquire, release_concurrency
+from app.helpers.rate_limiter import check_rpm_token_bucket, check_tpm, concurrency_acquire, release_concurrency, safe_decr
 from app.helpers.redis_keys import RedisKeys
 from app.helpers.constants import DEFAULT_MAX_TOKENS, PROVIDER_MODELS, PROVIDER_URLS
 from app.helpers.providers import call_anthropic, call_cohere, call_gemini, call_openai
@@ -16,11 +17,11 @@ from app.helpers.semanticCache import get_semantic_cache, set_semantic_cache
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 user_rpm = 20
-tenant_rpm = 200
+tenant_rpm = 2000
 conc_limit_user = 3
 conc_limit_tenant = 20
-tpm_limit_user = 1000
-tpm_limit_tenant = 5000
+tpm_limit_user = 10000
+tpm_limit_tenant = 50000
 
 def get_provider(model: str) -> str:
     for provider, models in PROVIDER_MODELS.items():
@@ -36,14 +37,18 @@ async def chat(
 ):
     user_id = str(current_user.id)
     tenant_id = str(current_user.tenant_id)
-    if not check_rpm_token_bucket(RedisKeys.rpm_tenant(tenant_id), tenant_rpm):
-        raise HTTPException(status_code=429, detail="Tenant RPM limit exceeded")
+    input_token = count_tokens(request.message, request.system_prompt)
+    estimated_output_token = request.max_tokens or DEFAULT_MAX_TOKENS
+    total_token = input_token + estimated_output_token
+    
     if not check_rpm_token_bucket(RedisKeys.rpm_user(tenant_id, user_id), user_rpm):
         raise HTTPException(status_code=429, detail="User RPM limit exceeded")
-    if not check_tpm(RedisKeys.tpm_tenant(tenant_id), tpm_limit_tenant, 100):
-        raise HTTPException(status_code=429, detail="Tenant TPM limit exceeded")
-    if not check_tpm(RedisKeys.tpm_user(tenant_id, user_id), tpm_limit_user, 100):
+    if not check_rpm_token_bucket(RedisKeys.rpm_tenant(tenant_id), tenant_rpm):
+        raise HTTPException(status_code=429, detail="Tenant RPM limit exceeded")
+    if not check_tpm(RedisKeys.tpm_user(tenant_id, user_id), tpm_limit_user, total_token):
         raise HTTPException(status_code=429, detail="User TPM limit exceeded")
+    if not check_tpm(RedisKeys.tpm_tenant(tenant_id), tpm_limit_tenant, total_token):
+        raise HTTPException(status_code=429, detail="Tenant TPM limit exceeded")
     if not concurrency_acquire(RedisKeys.concurrency_tenant(tenant_id), conc_limit_tenant):
         raise HTTPException(status_code=429, detail="Tenant concurrency limit exceeded")
     if not concurrency_acquire(RedisKeys.concurrency_user(tenant_id, user_id), conc_limit_user):
@@ -89,6 +94,22 @@ async def chat(
             llm_response =  await call_openai(api_key, request, url=PROVIDER_URLS[provider])
         elif provider == "cohere":
             llm_response =  await call_cohere(api_key, request)
+            
+        exact_token = extract_tokens(llm_response["raw_data"], provider)
+        if exact_token <= 0:
+            exact_token = total_token
+
+        delta = exact_token - total_token
+        tenant_tpm_key = RedisKeys.tpm_tenant(tenant_id)
+        user_tpm_key = RedisKeys.tpm_user(tenant_id, user_id)
+
+        if delta > 0:
+            check_tpm(tenant_tpm_key, tpm_limit_tenant, delta)
+            check_tpm(user_tpm_key, tpm_limit_user, delta)
+        elif delta < 0:
+            safe_decr(tenant_tpm_key, -delta)
+            safe_decr(user_tpm_key, -delta)
+        
         if should_cache:
             set_cache(cache_key, llm_response["response"])
             await set_semantic_cache(db, tenant_id, request.model, request.system_prompt, request.message, llm_response["response"])

@@ -60,3 +60,4 @@ class ChatResponse(BaseModel):
     response: str
     model: str
     cached: bool = False
+    raw_data: Optional[dict[str, Any]] = None
