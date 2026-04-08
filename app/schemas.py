@@ -54,7 +54,8 @@ class ChatRequest(BaseModel):
     max_tokens: Optional[int] = None
     system_prompt: Optional[str] = None
     # extra_params: Optional[dict[str, Any]] = None
-    model: str
+    best_model_choice: bool = True
+    model: Optional[str] = None
 
 class ChatResponse(BaseModel):
     response: str

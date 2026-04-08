@@ -6,9 +6,14 @@ from app.schemas import ChatRequest
 
 
 async def call_openai(api_key: str, req: ChatRequest, url: str = PROVIDER_URLS["openai"]) -> dict:
+    messages = []
+    if req.system_prompt:
+        messages.append({"role": "system", "content": req.system_prompt})
+    messages.append({"role": "user", "content": req.message})
+    
     payload = {
         "model": req.model,
-        "messages": [{"role": "user", "content": req.message}],
+        "messages": messages,
         "max_tokens": req.max_tokens or DEFAULT_MAX_TOKENS
     }
     if req.temperature is not None:
@@ -28,11 +33,14 @@ async def call_openai(api_key: str, req: ChatRequest, url: str = PROVIDER_URLS["
         return {"response": data["choices"][0]["message"]["content"], "model": req.model, "raw_data": data}
 
 async def call_anthropic(api_key: str, req: ChatRequest) -> dict:
+
     payload = {
         "model": req.model,
-        "messages": [{"role": "user", "content": req.message}],
-        "max_tokens": req.max_tokens or DEFAULT_MAX_TOKENS
+        "max_tokens": req.max_tokens or DEFAULT_MAX_TOKENS,
+        "messages": [{"role": "user", "content": req.message}]
     }
+    if req.system_prompt:
+        payload["system"] = req.system_prompt
     if req.temperature is not None:
         payload["temperature"] = req.temperature
     # if req.extra_params:
@@ -56,6 +64,8 @@ async def call_gemini(api_key: str, req: ChatRequest) -> dict:
             "maxOutputTokens": req.max_tokens or DEFAULT_MAX_TOKENS
         }
     }
+    if req.system_prompt:
+        payload["system_prompt"] = req.system_prompt
     if req.temperature is not None:
         payload["generationConfig"]["temperature"] = req.temperature
     # if req.extra_params:
@@ -73,9 +83,14 @@ async def call_gemini(api_key: str, req: ChatRequest) -> dict:
         return {"response": data["candidates"][0]["content"]["parts"][0]["text"], "model": req.model, "raw_data": data}
 
 async def call_cohere(api_key: str, req: ChatRequest) -> dict:
+    messages = []
+    if req.system_prompt:
+        messages.append({"role": "system", "content": req.system_prompt})
+    messages.append({"role": "user", "content": req.message})
+    
     payload = {
         "model": req.model,
-        "messages": [{"role": "user", "content": req.message}],
+        "messages": messages,
         "max_tokens": req.max_tokens or DEFAULT_MAX_TOKENS
     }
     if req.temperature is not None:

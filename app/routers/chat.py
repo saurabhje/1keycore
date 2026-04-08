@@ -14,6 +14,7 @@ from app.helpers.constants import DEFAULT_MAX_TOKENS, PROVIDER_MODELS, PROVIDER_
 from app.helpers.providers import call_anthropic, call_cohere, call_gemini, call_openai
 from app.helpers.cache import create_key, get_cache, set_cache
 from app.helpers.semanticCache import get_semantic_cache, set_semantic_cache
+from app.helpers.modelRouter import get_best_model, score_complexity
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 user_rpm = 20
@@ -69,21 +70,28 @@ async def chat(
             
             print(f"Cache miss: {cache_key}")
 
-        provider = get_provider(request.model)
         result = await db.execute(
-            select(TenantAPIKey).where(
+            select(TenantAPIKey.encrypted_key, TenantAPIKey.provider).where(
                 TenantAPIKey.tenant_id == current_user.tenant_id,
-                TenantAPIKey.provider == provider
             )
         )
-        tenant_key = result.scalars().first()
-        if not tenant_key:
+        rows = result.fetchall()
+        available_providers = [row.provider for row in rows]
+        tenant_keys = {row.provider: row.encrypted_key for row in rows}
+        if not available_providers:
+            raise HTTPException(status_code=400, detail="Please add at least one API key.")
+        
+        tier = score_complexity(request.message, request.system_prompt)
+        model = get_best_model(available_providers, tier)
+        provider = get_provider(model)
+        use_key = tenant_keys.get(provider)
+        if not use_key:
             raise HTTPException(
                 status_code=400,
                 detail=f"No {provider} API Key registered for your organization"
             )
         
-        api_key = decrypt_api_key(tenant_key.encrypted_key)
+        api_key = decrypt_api_key(use_key)
         if provider == "openai":
             llm_response =  await call_openai(api_key, request, url=PROVIDER_URLS["openai"])
         elif provider == "anthropic":

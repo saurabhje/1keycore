@@ -1,0 +1,167 @@
+{
+    "providers": {
+
+      "openai": {
+        "enabled": true,
+        "models": {
+          "economy": {
+            "id": "gpt-4.1-mini",
+            "speed": 0.96,
+            "quality": 0.65,
+            "cost": 0.2,
+            "enabled": true
+          },
+          "standard": {
+            "id": "gpt-5-mini",
+            "speed": 0.88,
+            "quality": 0.78,
+            "cost": 0.5,
+            "enabled": true
+          },
+          "premium": {
+            "id": "gpt-5.4-pro",
+            "speed": 0.55,
+            "quality": 0.98,
+            "cost": 1.0,
+            "enabled": true
+          }
+        }
+      },
+
+      "anthropic": {
+        "enabled": true,
+        "models": {
+          "economy": {
+            "id": "claude-4.5-haiku",
+            "speed": 0.92,
+            "quality": 0.72,
+            "cost": 0.3,
+            "enabled": true
+          },
+          "standard": {
+            "id": "claude-4.6-sonnet",
+            "speed": 0.75,
+            "quality": 0.90,
+            "cost": 0.6,
+            "enabled": true
+          },
+          "premium": {
+            "id": "claude-4.6-opus",
+            "speed": 0.45,
+            "quality": 1.0,
+            "cost": 1.0,
+            "enabled": true
+          }
+        }
+      },
+
+      "google": {
+        "enabled": true,
+        "models": {
+          "economy": {
+            "id": "gemini-2.5-flash-lite",
+            "speed": 0.98,
+            "quality": 0.60,
+            "cost": 0.15,
+            "enabled": true
+          },
+          "standard": {
+            "id": "gemini-3.1-flash",
+            "speed": 0.94,
+            "quality": 0.82,
+            "cost": 0.4,
+            "enabled": true
+          },
+          "premium": {
+            "id": "gemini-3.1-pro",
+            "speed": 0.65,
+            "quality": 0.96,
+            "cost": 0.9,
+            "enabled": true
+          }
+        }
+      },
+
+      "groq": {
+        "enabled": true,
+        "models": {
+          "economy": {
+            "id": "llama-4-8b-groq",
+            "speed": 1.0,
+            "quality": 0.65,
+            "cost": 0.1,
+            "enabled": true
+          },
+          "standard": {
+            "id": "llama-4-70b-groq",
+            "speed": 0.94,
+            "quality": 0.85,
+            "cost": 0.3,
+            "enabled": true
+          },
+          "premium": {
+            "id": "deepseek-r1-distill-groq",
+            "speed": 0.80,
+            "quality": 0.92,
+            "cost": 0.4,
+            "enabled": true
+          }
+        }
+      },
+
+      "mistral": {
+        "enabled": true,
+        "models": {
+          "economy": {
+            "id": "mistral-small-3.1",
+            "speed": 0.90,
+            "quality": 0.68,
+            "cost": 0.2,
+            "enabled": true
+          },
+          "standard": {
+            "id": "mistral-large-3",
+            "speed": 0.68,
+            "quality": 0.88,
+            "cost": 0.5,
+            "enabled": true
+          },
+          "premium": {
+            "id": "codestral-v2",
+            "speed": 0.82,
+            "quality": 0.85,
+            "cost": 0.45,
+            "enabled": true
+          }
+        }
+      },
+
+      "cohere": {
+        "enabled": true,
+        "models": {
+          "economy": {
+            "id": "command-r7b",
+            "speed": 0.92,
+            "quality": 0.70,
+            "cost": 0.2,
+            "enabled": true
+          },
+          "standard": {
+            "id": "command-r-plus-v2",
+            "speed": 0.70,
+            "quality": 0.86,
+            "cost": 0.45,
+            "enabled": true
+          },
+          "premium": {
+            "id": "command-r-plus-v2",
+            "speed": 0.70,
+            "quality": 0.86,
+            "cost": 0.45,
+            "enabled": true
+          }
+        }
+      }
+
+    }
+}

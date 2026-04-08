@@ -11,7 +11,7 @@ PROVIDER_MODELS = {
     "openai":    ["gpt-4o", "gpt-4o-mini", "gpt-3.5-turbo"],
     "anthropic": ["claude-3-5-sonnet-20241022", "claude-3-haiku-20240307"],
     "gemini":    ["gemini-1.5-pro", "gemini-1.5-flash"],
-    "groq":      ["llama-3.3-70b-versatile"],
+    "groq":      ["deepseek-r1-distill-groq", "llama-4-8b-groq", "llama-4-70b-groq"],
     "mistral":   ["mistral-large-latest", "mistral-small-latest"],
     "cohere":    ["command-r-plus", "command-r"],
 }
