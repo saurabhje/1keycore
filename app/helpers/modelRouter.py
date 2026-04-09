@@ -4,7 +4,9 @@ import re
 
 def load_provider_config():
     # Adjusted path
-    config_path = os.path.join(os.path.dirname(__file__), "../../provider.json")
+    current_file_path = os.path.abspath(__file__)
+    project_root = os.path.dirname(os.path.dirname(os.path.dirname(current_file_path)))
+    config_path = os.path.join(project_root, "models.json")
     with open(config_path, "r") as f:
         return json.load(f)
 
@@ -34,12 +36,7 @@ def get_best_model(available_provider_names: list, tier: str) -> str:
             model_info["speed"] * 0.3 - 
             model_info["cost"] * 0.4
         )
-        # We return the 'id' because that's what your call_openai/etc functions need
         candidates.append((score, model_info["id"]))
-
-    if not candidates:
-        # Emergency fallback
-        return "gpt-4.1-mini"
         
     return max(candidates, key=lambda x: x[0])[1]
 

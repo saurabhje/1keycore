@@ -86,21 +86,21 @@
         "enabled": true,
         "models": {
           "economy": {
-            "id": "llama-4-8b-groq",
+            "id": "llama-3.1-8b-instant",
             "speed": 1.0,
             "quality": 0.65,
             "cost": 0.1,
             "enabled": true
           },
           "standard": {
-            "id": "llama-4-70b-groq",
+            "id": "llama-3.3-70b-versatile",
             "speed": 0.94,
             "quality": 0.85,
             "cost": 0.3,
             "enabled": true
           },
           "premium": {
-            "id": "deepseek-r1-distill-groq",
+            "id": "openai/gpt-oss-120b",
             "speed": 0.80,
             "quality": 0.92,
             "cost": 0.4,

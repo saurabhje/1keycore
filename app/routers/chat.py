@@ -58,6 +58,25 @@ async def chat(
     
     try:
         should_cache = request.temperature is None or request.temperature == 0.0
+
+        result = await db.execute(
+            select(TenantAPIKey.encrypted_key, TenantAPIKey.provider).where(
+                TenantAPIKey.tenant_id == current_user.tenant_id,
+            )
+        )
+        rows = result.fetchall()
+        available_providers = [row.provider for row in rows]
+        tenant_keys = {row.provider: row.encrypted_key for row in rows}
+        if not available_providers:
+            raise HTTPException(status_code=400, detail="Please add at least one API key.")
+    
+        if request.best_model_choice:
+            tier = score_complexity(request.message, request.system_prompt)
+            request.model = get_best_model(available_providers, tier)
+
+        elif not request.model:
+            raise HTTPException(status_code=400, detail="Model must be specified if best_model_choice is false.")
+        
         cache_key = None
         if should_cache:
             cache_key = create_key(tenant_id, request.model, request.message, request.max_tokens or DEFAULT_MAX_TOKENS, request.temperature or 0.0)
@@ -70,20 +89,7 @@ async def chat(
             
             print(f"Cache miss: {cache_key}")
 
-        result = await db.execute(
-            select(TenantAPIKey.encrypted_key, TenantAPIKey.provider).where(
-                TenantAPIKey.tenant_id == current_user.tenant_id,
-            )
-        )
-        rows = result.fetchall()
-        available_providers = [row.provider for row in rows]
-        tenant_keys = {row.provider: row.encrypted_key for row in rows}
-        if not available_providers:
-            raise HTTPException(status_code=400, detail="Please add at least one API key.")
-        
-        tier = score_complexity(request.message, request.system_prompt)
-        model = get_best_model(available_providers, tier)
-        provider = get_provider(model)
+        provider = get_provider(request.model)
         use_key = tenant_keys.get(provider)
         if not use_key:
             raise HTTPException(

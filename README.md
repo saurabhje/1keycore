@@ -159,28 +159,28 @@ Requests can include an optional `system_prompt`. The system prompt hash is incl
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│                  Tenant (Acme Corp)                  │
-│                                                      │
-│  Admin registers keys    Users send requests         │
-│  POST /keys              POST /chat { msg, model }   │
-└────────────┬─────────────────────┬───────────────────┘
+│                  Tenant (Acme Corp)                 │
+│                                                     │
+│  Admin registers keys    Users send requests        │
+│  POST /keys              POST /chat { msg, model }  │
+└────────────┬─────────────────────┬──────────────────┘
              │                     │ JWT
              ▼                     ▼
 ┌─────────────────────────────────────────────────────┐
-│                   1KeyCore Gateway                   │
-│                                                      │
+│                   1KeyCore Gateway                  │
+│                                                     │
 │  ┌─────────────┐  ┌──────────────┐  ┌────────────┐  │
 │  │ Rate Limiter│  │ Exact Cache  │  │Semantic    │  │
 │  │ RPM+TPM+    │  │ SHA-256 hash │  │Cache       │  │
 │  │ Concurrency │  │ Redis TTL    │  │pgvector    │  │
 │  │ Redis       │  └──────────────┘  │cosine sim  │  │
 │  └─────────────┘                    └────────────┘  │
-│                                                      │
-│  ┌──────────────────────────────────────────────┐    │
-│  │              Model Router                    │    │
-│  │  Resolves provider → decrypts key → routes   │    │
-│  │  Smart routing: complexity score → tier      │    │
-│  └──────────────────────┬───────────────────────┘    │
+│                                                     │
+│  ┌──────────────────────────────────────────────┐   │
+│  │              Model Router                    |   │
+│  │  Resolves provider → decrypts key → routes   │   │
+│  │  Smart routing: complexity score → tier      │   │
+│  └──────────────────────┬───────────────────────┘   │
 └─────────────────────────┼───────────────────────────┘
                           ▼
          ┌────────────────────────────────┐
