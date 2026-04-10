@@ -10,14 +10,6 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 @router.post("/register", response_model=UserResponse)
 async def register(user: UserCreate, db: AsyncSession = Depends(get_session)):
-
-    result = await db.execute(select(Tenant).where(Tenant.id == user.tenant_id))
-    tenant = result.scalars().first()
-    if not tenant:
-        raise HTTPException(status_code=400, detail="Invalid tenant ID")
-    if not tenant.is_active:
-        raise HTTPException(status_code=400, detail="Tenant is inactive")
-
     
     result = await db.execute(select(User).where(User.email == user.email))
     if result.scalars().first():
@@ -26,15 +18,9 @@ async def register(user: UserCreate, db: AsyncSession = Depends(get_session)):
     new_user = User(
         email=user.email,
         hashed_password=hash_password(user.password),
-        tenant_id=user.tenant_id
     )
     db.add(new_user)
-    await db.flush()
-    if not tenant.admin_id:
-        tenant.admin_id = new_user.id
-        
     await db.commit()
-    await db.refresh(new_user)
     return new_user
 
 @router.post("/login", response_model=TokenResponse)
@@ -47,7 +33,7 @@ async def login(credentials: UserLogin, db: AsyncSession = Depends(get_session))
 
     token = create_jwt_token(
         user_id=str(user.id),
-        tenant_id=str(user.tenant_id),
+        tenant_id=str(user.tenant_id) if user.tenant_id else None,
         email=user.email
     )
     return {"access_token": token, "token_type": "bearer"}

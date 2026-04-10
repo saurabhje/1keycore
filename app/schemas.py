@@ -9,23 +9,30 @@ class TenantBase(BaseModel):
     
 class TenantCreate(TenantBase):
     name: str
+    admin_id: UUID
 
 class TenantResponse(TenantBase):
     id: UUID
     created_at: datetime
     model_config = ConfigDict(from_attributes=True)
 
+class TenantOnBoarding(BaseModel):
+    tenant: TenantResponse
+    access_token: str
+    token_type: str = "bearer"
+
 # User schemas
 class UserBase(BaseModel):
     email: str
 
 class UserCreate(UserBase):
+    name: str
     password: str
-    tenant_id: UUID
+    tenant_id: Optional[UUID] = None
 
 class UserResponse(UserBase):
     id: UUID
-    tenant_id: UUID
+    tenant_id: Optional[UUID] = None
     created_at: datetime
     model_config = ConfigDict(from_attributes=True)
 

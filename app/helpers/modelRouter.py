@@ -1,9 +1,7 @@
 import json
 import os
-import re
 
 def load_provider_config():
-    # Adjusted path
     current_file_path = os.path.abspath(__file__)
     project_root = os.path.dirname(os.path.dirname(os.path.dirname(current_file_path)))
     config_path = os.path.join(project_root, "models.json")
