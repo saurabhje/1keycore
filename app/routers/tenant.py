@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.database import get_session
@@ -7,10 +7,11 @@ from app.models import Tenant, User
 from app.schemas import TenantCreate, TenantOnBoarding
 from app.security import create_jwt_token
 
-router = APIRouter(prefix="/tenant", tags=["tenant"])
+router = APIRouter(prefix="/orgs", tags=["organization"])
 
 @router.post("/", response_model=TenantOnBoarding)
 async def create_tenant(
+    response: Response,
     tenant: TenantCreate, 
     db: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user)
@@ -21,6 +22,7 @@ async def create_tenant(
 
     new_tenant = Tenant(
         name=tenant.name, 
+        slug = tenant.slug,
         admin_id = current_user.id,
         is_active=True)
     
@@ -35,6 +37,15 @@ async def create_tenant(
         user_id= str(current_user.id),
         tenant_id=str(new_tenant.id),
         email=current_user.email
+    )
+
+    response.set_cookie(
+        key="access_token",
+        value=new_token,
+        httponly=True,
+        secure=False,
+        samesite="lax",
+        path="/"      
     )
 
     return {

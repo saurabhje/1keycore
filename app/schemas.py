@@ -9,10 +9,11 @@ class TenantBase(BaseModel):
     
 class TenantCreate(TenantBase):
     name: str
-    admin_id: UUID
+    slug: str
 
 class TenantResponse(TenantBase):
     id: UUID
+    slug: str
     created_at: datetime
     model_config = ConfigDict(from_attributes=True)
 

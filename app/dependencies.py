@@ -1,4 +1,4 @@
-from fastapi import Depends, HTTPException
+from fastapi import Depends, HTTPException, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -9,10 +9,13 @@ from app.security import decode_jwt_token
 bearer = HTTPBearer()
 
 async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(bearer),
+    request: Request,
     db: AsyncSession = Depends(get_session)
 ) -> User:
-    payload = decode_jwt_token(credentials.credentials)
+    token = request.cookies.get("access_token")
+    if not token:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    payload = decode_jwt_token(token)
     result = await db.execute(select(User).where(User.id == payload["user_id"]))
     user = result.scalars().first()
     if not user:

@@ -1,6 +1,6 @@
 import bcrypt
 from jose import jwt, JWTError
-from datetime import datetime, timedelta
+from datetime import datetime,timedelta, timezone
 from fastapi import HTTPException
 from cryptography.fernet import Fernet
 from .config import settings
@@ -23,13 +23,13 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
         hashed_password.encode('utf-8')
     )
 
-def create_jwt_token(user_id: str, tenant_id: str, email: str) -> str:
+def create_jwt_token(user_id: str, tenant_id: str | None, email: str) -> str:
     payload = {
         "user_id": user_id,
         "tenant_id": tenant_id,
         "email": email,
-        "exp": datetime.utcnow() + timedelta(hours=TOKEN_EXPIRE_HOURS)
-    }
+        "exp": datetime.now(timezone.utc) + timedelta(hours=TOKEN_EXPIRE_HOURS)    
+        }
     return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
 
 def decode_jwt_token(token: str) -> dict:

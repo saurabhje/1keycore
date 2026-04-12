@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.database import get_session
@@ -17,6 +17,7 @@ async def register(user: UserCreate, db: AsyncSession = Depends(get_session)):
 
     new_user = User(
         email=user.email,
+        name=user.name,
         hashed_password=hash_password(user.password),
     )
     db.add(new_user)
@@ -24,7 +25,7 @@ async def register(user: UserCreate, db: AsyncSession = Depends(get_session)):
     return new_user
 
 @router.post("/login", response_model=TokenResponse)
-async def login(credentials: UserLogin, db: AsyncSession = Depends(get_session)):
+async def login(credentials: UserLogin,response: Response, db: AsyncSession = Depends(get_session)):
     result = await db.execute(select(User).where(User.email == credentials.email))
     user = result.scalars().first()
 
@@ -35,5 +36,14 @@ async def login(credentials: UserLogin, db: AsyncSession = Depends(get_session))
         user_id=str(user.id),
         tenant_id=str(user.tenant_id) if user.tenant_id else None,
         email=user.email
+    )
+    response.set_cookie(
+        key="access_token",
+        value=token,
+        httponly=True, 
+        secure=False,
+        samesite="lax",
+        max_age=24 * 3600,
+        path="/"
     )
     return {"access_token": token, "token_type": "bearer"}
