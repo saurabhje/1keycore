@@ -11,6 +11,7 @@ class Tenant(Base):
     name = Column(String, unique=True, index=True, nullable=False)
     slug = Column(String, unique=True, index=True, nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
+    invite_code = Column(String, unique=True, index=True, nullable=True)
     admin_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     api_keys = relationship("TenantAPIKey", back_populates="tenant")

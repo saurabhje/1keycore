@@ -22,6 +22,9 @@ class TenantOnBoarding(BaseModel):
     access_token: str
     token_type: str = "bearer"
 
+class JoinTenant(BaseModel):
+    invite_code: str
+
 # User schemas
 class UserBase(BaseModel):
     email: str
