@@ -63,7 +63,8 @@ async def generate_invite(
     new_code = secrets.token_hex(4).upper()
     result = await db.execute(select(Tenant).where(Tenant.id == admin.tenant_id))
     tenant = result.scalars().first()
-    
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant not found")
     tenant.invite_code = new_code
     await db.commit()
 

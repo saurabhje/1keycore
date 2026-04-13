@@ -25,12 +25,18 @@ async def register(user: UserCreate, db: AsyncSession = Depends(get_session)):
     return new_user
 
 @router.post("/login", response_model=TokenResponse)
-async def login(credentials: UserLogin,response: Response, db: AsyncSession = Depends(get_session)):
+async def login(
+    credentials: UserLogin,
+    response: Response, 
+    db: AsyncSession = Depends(get_session)):
+
     result = await db.execute(select(User).where(User.email == credentials.email))
     user = result.scalars().first()
-
-    if not user or not verify_password(credentials.password, user.hashed_password):
-        raise HTTPException(status_code=401, detail="Invalid email or password")
+    if not user:
+        raise HTTPException(status_code=401, detail="Email not found")
+    
+    if not verify_password(credentials.password, user.hashed_password):
+        raise HTTPException(status_code=401, detail="Invalid password")
 
     token = create_jwt_token(
         user_id=str(user.id),
