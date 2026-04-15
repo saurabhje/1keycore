@@ -42,9 +42,8 @@ async def get_semantic_cache(
         tenant_id: str, 
         model: str,
         system_prompt: str | None, 
-        message: str
+        embedding: list[float]
 ) -> str | None:
-    embedding = get_embeddings(message)
     sp_hash = hash_message(system_prompt)
 
     query_embedding = bindparam(
@@ -72,10 +71,9 @@ async def set_semantic_cache(
         tenant_id: str, 
         model: str,
         system_prompt: str | None, 
-        message: str, 
+        embedding: list[float],
         response: str
 ):
-    embedding = get_embeddings(message)
     sp_hash = hash_message(system_prompt)
 
     cache_entry = SemanticCache(

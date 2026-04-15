@@ -32,11 +32,9 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     name: str
     password: str
-    tenant_id: Optional[UUID] = None
 
 class UserResponse(UserBase):
     id: UUID
-    tenant_id: Optional[UUID] = None
     created_at: datetime
     model_config = ConfigDict(from_attributes=True)
 

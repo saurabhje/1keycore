@@ -1,4 +1,5 @@
-from fastapi import HTTPException, Depends, APIRouter
+from fastapi import HTTPException, Depends, APIRouter, BackgroundTasks
+import time
 from app.helpers.tokens import count_tokens, extract_tokens
 from app.schemas import ChatRequest, ChatResponse
 from app.dependencies import get_current_user
@@ -6,15 +7,15 @@ from app.models import User, TenantAPIKey
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.database import get_session
-from sqlalchemy.ext.asyncio import AsyncSession
 from app.security import decrypt_api_key
 from app.helpers.rate_limiter import check_rpm_token_bucket, check_tpm, concurrency_acquire, release_concurrency, safe_decr
 from app.helpers.redis_keys import RedisKeys
 from app.helpers.constants import DEFAULT_MAX_TOKENS, PROVIDER_MODELS, PROVIDER_URLS
 from app.helpers.providers import call_anthropic, call_cohere, call_gemini, call_openai
 from app.helpers.cache import create_key, get_cache, set_cache
-from app.helpers.semanticCache import get_semantic_cache, set_semantic_cache
+from app.helpers.semanticCache import get_embeddings, get_semantic_cache, set_semantic_cache
 from app.helpers.modelRouter import get_best_model, score_complexity
+from app.helpers.task import save_log_request
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 user_rpm = 20
@@ -33,6 +34,7 @@ def get_provider(model: str) -> str:
 @router.post("/", response_model=ChatResponse)
 async def chat(
         request: ChatRequest,
+        background_tasks: BackgroundTasks,
         current_user: User = Depends(get_current_user),
         db: AsyncSession = Depends(get_session)
 ):
@@ -41,7 +43,8 @@ async def chat(
     input_token = count_tokens(request.message, request.system_prompt)
     estimated_output_token = request.max_tokens or DEFAULT_MAX_TOKENS
     total_token = input_token + estimated_output_token
-    
+    start_time = time.perf_counter()
+
     if not check_rpm_token_bucket(RedisKeys.rpm_user(tenant_id, user_id), user_rpm):
         raise HTTPException(status_code=429, detail="User RPM limit exceeded")
     if not check_rpm_token_bucket(RedisKeys.rpm_tenant(tenant_id), tenant_rpm):
@@ -70,24 +73,32 @@ async def chat(
         if not available_providers:
             raise HTTPException(status_code=400, detail="Please add at least one API key.")
     
+        log_tier =  None, None
         if request.best_model_choice:
-            tier = score_complexity(request.message, request.system_prompt)
+            log_tier = tier = score_complexity(request.message, request.system_prompt)
             request.model = get_best_model(available_providers, tier)
+    
 
         elif not request.model:
             raise HTTPException(status_code=400, detail="Model must be specified if best_model_choice is false.")
         
         cache_key = None
+        cache_type = None
+        cache_success = False
+        embedding = get_embeddings(request.message)
         if should_cache:
             cache_key = create_key(tenant_id, request.model, request.message, request.max_tokens or DEFAULT_MAX_TOKENS, request.temperature or 0.0)
             cached_response = get_cache(cache_key)
             if cached_response:
+                cache_success = True
+                cache_type = "exact"
                 return {"response": cached_response, "model": request.model, "cached": True}
-            semantic_response = await get_semantic_cache(db, tenant_id, request.model, request.system_prompt, request.message)
+            semantic_response = await get_semantic_cache(db, tenant_id, request.model, request.system_prompt, embedding)
             if semantic_response:
+                cache_success = True
+                cache_type = "semantic"
                 return {"response": semantic_response, "model": request.model, "cached": True}
             
-            print(f"Cache miss: {cache_key}")
 
         provider = get_provider(request.model)
         use_key = tenant_keys.get(provider)
@@ -98,6 +109,7 @@ async def chat(
             )
         
         api_key = decrypt_api_key(use_key)
+        outbound_start_time = time.perf_counter()
         if provider == "openai":
             llm_response =  await call_openai(api_key, request, url=PROVIDER_URLS["openai"])
         elif provider == "anthropic":
@@ -108,10 +120,28 @@ async def chat(
             llm_response =  await call_openai(api_key, request, url=PROVIDER_URLS[provider])
         elif provider == "cohere":
             llm_response =  await call_cohere(api_key, request)
-            
+
+        provider_latency_ms = int((time.perf_counter() - outbound_start_time) * 1000)
+
         exact_token = extract_tokens(llm_response["raw_data"], provider)
         if exact_token <= 0:
             exact_token = total_token
+        log_token = exact_token if not cache_success else 0
+        latency_ms = int((time.perf_counter() - start_time) * 1000)
+        gateway_latency_ms = latency_ms - provider_latency_ms
+        print(gateway_latency_ms)       
+        log_payload = {
+            "tenant_id": tenant_id,
+            "user_id": user_id,
+            "model": request.model,
+            "tier": log_tier,
+            "latency_ms": latency_ms,
+            "cache_success": cache_success,
+            "cache_type": cache_type,
+            "tokens_used": log_token,
+        }
+
+        background_tasks.add_task(save_log_request, log_payload)
 
         delta = exact_token - total_token
         tenant_tpm_key = RedisKeys.tpm_tenant(tenant_id)
@@ -126,7 +156,7 @@ async def chat(
         
         if should_cache:
             set_cache(cache_key, llm_response["response"])
-            await set_semantic_cache(db, tenant_id, request.model, request.system_prompt, request.message, llm_response["response"])
+            await set_semantic_cache(db, tenant_id, request.model, request.system_prompt, embedding, llm_response["response"])
         return {"response": llm_response["response"], "model": request.model, "cached": False}
     finally:
         release_concurrency(RedisKeys.concurrency_tenant(tenant_id))

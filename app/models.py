@@ -1,6 +1,6 @@
 import uuid
 from pgvector.sqlalchemy import Vector
-from sqlalchemy import Column, String, ForeignKey, Boolean, DateTime, func
+from sqlalchemy import Column, String, ForeignKey, Boolean, DateTime, func, Integer
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from .database import Base
@@ -45,4 +45,17 @@ class SemanticCache(Base):
     embedding = Column(Vector(384), nullable=False)
     system_prompt_hash = Column(String, nullable=True)
     response = Column(String, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+class RequestLog(Base):
+    __tablename__ = "request_logs"
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    tenant_id = Column(UUID(as_uuid=True), ForeignKey("tenants.id"), nullable=False, index=True)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
+    model = Column(String, nullable=False)
+    tier = Column(String(20), nullable=True)
+    cache_success = Column(Boolean, nullable=False)
+    cache_type = Column(String(20), nullable=True)
+    tokens_used = Column(Integer, nullable=False)
+    latency_ms = Column(Integer, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
