@@ -1,35 +1,40 @@
 import hashlib
 from typing import Optional
-
 import numpy as np
-from sentence_transformers import SentenceTransformer
 from app.models import SemanticCache
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import bindparam, select
 from pgvector.sqlalchemy import Vector
+from huggingface_hub import InferenceClient
+from app.config import settings
 
-sentence_model = SentenceTransformer('all-MiniLM-L6-v2')
+
+SEMANTIC_CACHE_DISTANCE_THRESHOLD = 0.15
+client = InferenceClient(
+    provider="hf-inference",
+    api_key=settings.HF_TOKEN
+)
+
 
 EMBEDDING_DIMENSION = 384
-SEMANTIC_CACHE_DISTANCE_THRESHOLD = 0.25
 
-
-def _coerce_embedding(raw_embedding: list[float]) -> list[float]:
-    embedding = np.asarray(raw_embedding, dtype=np.float32).reshape(-1)
-    if embedding.size != EMBEDDING_DIMENSION:
+def _coerce_embedding(embedding: np.ndarray) -> list[float]:
+    if embedding.shape[0] != EMBEDDING_DIMENSION:
         raise ValueError(
-            f"Expected embedding dimension {EMBEDDING_DIMENSION}, got {embedding.size}"
+            f"Expected {EMBEDDING_DIMENSION}, got {embedding.shape[0]}"
         )
-    return embedding.tolist()
 
+    return embedding.astype(np.float32).tolist()
 
 def get_embeddings(text: str) -> list[float]:
-    raw_embedding = sentence_model.encode(
+    result = client.feature_extraction(
         text,
-        convert_to_numpy=True,
-        normalize_embeddings=True
+        model="BAAI/bge-small-en"
     )
-    return _coerce_embedding(raw_embedding)
+
+    embedding = np.asarray(result)
+
+    return _coerce_embedding(embedding)
 
 
 def hash_message(system_prompt: str | None) -> Optional[str]:

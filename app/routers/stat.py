@@ -1,6 +1,6 @@
 from fastapi import APIRouter,Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import func, select, desc, case
+from sqlalchemy import func, select, desc, case 
 from app.database import get_session
 from app.models import RequestLog, TenantAPIKey, User
 from app.dependencies import get_current_user
@@ -24,16 +24,16 @@ async def get_usage_summary(
         func.count(RequestLog.id).label("total_requests"),
         func.sum(RequestLog.tokens_used).label("total_tokens"),
         func.sum(
-            case(RequestLog.cache_success, [(True, 0)], else_=0)
+            case((RequestLog.cache_success == True, 1), else_=0)
         ).label("cache_hits")
     ).where(RequestLog.tenant_id == tid)
 
     result = await db.execute(stats_query)
-    row = result.fetchall()
+    row = result.first()
 
-    total_req = row.total_requests or 0
-    total_tokens = row.total_tokens or 0
-    cache_hits = row.cache_hits or 0
+    total_req = row[0] if row and row[0] else 0
+    total_tokens = row[1] if row and row[1] else 0
+    cache_hits = row[2] if row and row[2] else 0
 
     hit_rate = (cache_hits / total_req * 100) if total_req > 0 else 0
     estimated_cost = total_tokens * BLENDED_TOKEN_COST
@@ -60,9 +60,8 @@ async def get_usage_by_model(
         RequestLog.model,
         func.count(RequestLog.id).label("requests"),
         func.sum(RequestLog.tokens_used).label("tokens"),
-        func.avg(RequestLog.latency_ms).label("avg_latency_ms"
-    ).where(RequestLog.tenant_id == tid).group_by(RequestLog.model).order_by(desc("tokens"))
-    )
+        func.avg(RequestLog.latency_ms).label("avg_latency_ms")
+        ).where(RequestLog.tenant_id == tid).group_by(RequestLog.model).order_by(desc("tokens"))
     result = await db.execute(model_stats_query)
     rows = result.fetchall()
 
@@ -119,7 +118,7 @@ async def get_recent_logs(
         RequestLog.cache_success,
         RequestLog.cache_type
     ).where(RequestLog.tenant_id == current_user.tenant_id
-    ).order_by(desc(RequestLog.created_at_)).limit(limit)
+    ).order_by(desc(RequestLog.created_at)).limit(limit)
 
     result = await db.execute(query)
     rows = result.fetchall() 

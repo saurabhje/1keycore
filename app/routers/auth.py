@@ -53,3 +53,17 @@ async def login(
         path="/"
     )
     return {"access_token": token, "token_type": "bearer"}
+
+
+@router.post("/logout", status_code=200)
+async def logout(response: Response):
+    """
+    Clears the HttpOnly JWT cookie to log the user out.
+    """
+    response.delete_cookie(
+        key="access_token",
+        httponly=True,
+        secure=False,
+        samesite="lax"
+    )
+    return {"message": "Successfully logged out"}

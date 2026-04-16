@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, delete
 from app.database import get_session
 from app.models import TenantAPIKey, User
 from app.dependencies import get_admin_user
@@ -11,7 +11,7 @@ router = APIRouter(prefix="/keys", tags=["keys"])
 
 SUPPORTED_PROVIDERS = ["openai", "anthropic", "gemini", "groq", "mistral", "cohere"]
 
-@router.post("/", response_model=APIKeyResponse)
+@router.post("/add", response_model=APIKeyResponse)
 async def register_api_key(
     payload: APIKeyCreate,
     current_user: User = Depends(get_admin_user),
@@ -39,3 +39,39 @@ async def register_api_key(
     await db.commit()
     await db.refresh(new_key)
     return new_key
+
+@router.get("/list", response_model=list[APIKeyResponse])
+async def list_api_keys(
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_session)
+):
+    result = await db.execute(
+        select(TenantAPIKey).where(TenantAPIKey.tenant_id == current_user.tenant_id)
+    )
+    keys = result.scalars().all()
+    return keys
+
+@router.delete("/{key_id}", status_code=200)
+async def revoke_api_key(
+    key_id: str,
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_session)
+):
+    """
+    Permanently deletes an API key from the system.
+    """
+    stmt = delete(TenantAPIKey).where(
+        TenantAPIKey.id == key_id,
+        TenantAPIKey.tenant_id == current_user.tenant_id
+    )
+
+    result = await db.execute(stmt)
+    await db.commit()
+
+    if result.rowcount == 0:
+        raise HTTPException(
+            status_code=404,
+            detail="API Key not found."
+        )
+
+    return {"message": "API key revoked successfully", "id": key_id}
