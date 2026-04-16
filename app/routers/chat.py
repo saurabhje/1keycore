@@ -130,13 +130,12 @@ async def chat(
         log_token = exact_token if not cache_success else 0
         latency_ms = int((time.perf_counter() - start_time) * 1000)
         gateway_latency_ms = latency_ms - provider_latency_ms
-        print(gateway_latency_ms)       
         log_payload = {
             "tenant_id": tenant_id,
             "user_id": user_id,
             "model": request.model,
             "tier": log_tier,
-            "latency_ms": latency_ms,
+            "latency_ms": gateway_latency_ms,
             "cache_success": cache_success,
             "cache_type": cache_type,
             "tokens_used": log_token,
