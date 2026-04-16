@@ -16,4 +16,4 @@ PROVIDER_MODELS = {
     "cohere":    ["command-r-plus", "command-r"],
 }
 
-DEFAULT_MAX_TOKENS = 1024
+DEFAULT_MAX_TOKENS = 2000

@@ -7,7 +7,7 @@ app = FastAPI(title="gatewise")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://1keycore.saurabh.codes", "http:1keyapi.saurabh.codes"],
+    allow_origins=["https://1keycore.saurabh.codes", "http:1keyapi.saurabh.codes", "http://57.158.25.167"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

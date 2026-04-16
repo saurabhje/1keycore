@@ -21,10 +21,10 @@ from app.helpers.task import save_log_request
 router = APIRouter(prefix="/chat", tags=["chat"])
 user_rpm = 20
 tenant_rpm = 2000
-conc_limit_user = 3
+conc_limit_user = 4
 conc_limit_tenant = 20
-tpm_limit_user = 10000
-tpm_limit_tenant = 50000
+tpm_limit_user = 1000000
+tpm_limit_tenant = 1000000
 
 def get_provider(model: str) -> str:
     for provider, models in PROVIDER_MODELS.items():
