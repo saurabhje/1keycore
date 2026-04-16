@@ -3,7 +3,7 @@ from fastapi.concurrency import run_in_threadpool
 import time
 from app.helpers.tokens import count_tokens, extract_tokens
 from app.schemas import ChatRequest, ChatResponse
-from app.dependencies import get_current_user
+from app.dependencies import chat_user
 from app.models import User, TenantAPIKey
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -36,7 +36,7 @@ def get_provider(model: str) -> str:
 async def chat(
         request: ChatRequest,
         background_tasks: BackgroundTasks,
-        current_user: User = Depends(get_current_user),
+        current_user: User = Depends(chat_user),
         db: AsyncSession = Depends(get_session)
 ):
     user_id = str(current_user.id)

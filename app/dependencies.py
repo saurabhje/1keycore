@@ -1,9 +1,9 @@
-from fastapi import Depends, HTTPException, Request
+from fastapi import Depends, HTTPException, Request, Header
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.database import get_session
-from app.models import User, Tenant
+from app.models import User, Tenant, TenantAPIKey
 from app.security import decode_jwt_token
 
 bearer = HTTPBearer()
@@ -34,3 +34,19 @@ async def get_admin_user(
     if tenant.admin_id != current_user.id:
         raise HTTPException(status_code=403, detail="Admin access required")
     return current_user
+
+async def chat_user(
+        x_api_key: str = Header(None),
+        db: AsyncSession = Depends(get_session)
+):
+    if not x_api_key:
+        raise HTTPException(status_code=401, detail="API key required")
+    result = await db.execute(
+        select(User)
+        .join(TenantAPIKey, TenantAPIKey.tenant_id == User.tenant_id)
+        .where(TenantAPIKey.req_key == x_api_key)
+    )
+    user = result.scalars().first()
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid API key")
+    return user

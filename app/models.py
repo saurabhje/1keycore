@@ -34,6 +34,7 @@ class TenantAPIKey(Base):
     tenant_id = Column(UUID(as_uuid=True), ForeignKey("tenants.id"), nullable=False)
     provider = Column(String, nullable=False)
     encrypted_key = Column(String, nullable=False)
+    req_key = Column(String, unique=True, index=True, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     tenant = relationship("Tenant", back_populates="api_keys")
 

@@ -50,6 +50,9 @@ class APIKeyCreate(BaseModel):
     provider: str
     api_key: str
 
+class APIKeyCreateResponse(BaseModel):
+    api_key: str
+
 class APIKeyResponse(BaseModel):
     id: UUID
     tenant_id: UUID

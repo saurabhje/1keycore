@@ -5,13 +5,13 @@ from app.database import get_session
 from app.models import TenantAPIKey, User
 from app.dependencies import get_admin_user
 from app.security import encrypt_api_key
-from app.schemas import APIKeyCreate, APIKeyResponse
-
+from app.schemas import APIKeyCreate, APIKeyResponse, APIKeyCreateResponse
+import secrets
 router = APIRouter(prefix="/keys", tags=["keys"])
 
 SUPPORTED_PROVIDERS = ["openai", "anthropic", "gemini", "groq", "mistral", "cohere"]
 
-@router.post("/add", response_model=APIKeyResponse)
+@router.post("/add", response_model=APIKeyCreateResponse)
 async def register_api_key(
     payload: APIKeyCreate,
     current_user: User = Depends(get_admin_user),
@@ -29,16 +29,21 @@ async def register_api_key(
     existing = result.scalars().first()
     if existing:
         raise HTTPException(status_code=400, detail=f"Key for {payload.provider} already registered")
+    
+    req_key = "sk-"+secrets.token_urlsafe(24)
 
     new_key = TenantAPIKey(
         tenant_id=current_user.tenant_id,
         provider=payload.provider,
-        encrypted_key=encrypt_api_key(payload.api_key)
+        encrypted_key=encrypt_api_key(payload.api_key),
+        req_key=req_key
     )
     db.add(new_key)
     await db.commit()
     await db.refresh(new_key)
-    return new_key
+    return {
+    "api_key": req_key
+}
 
 @router.get("/list", response_model=list[APIKeyResponse])
 async def list_api_keys(
