@@ -61,26 +61,42 @@ async def call_gemini(api_key: str, req: ChatRequest) -> dict:
     payload = {
         "contents": [{"parts": [{"text": req.message}]}],
         "generationConfig": {
-            "maxOutputTokens": req.max_tokens or DEFAULT_MAX_TOKENS
+            "maxOutputTokens": req.max_tokens or DEFAULT_MAX_TOKENS,
+            "temperature": req.temperature if req.temperature is not None else 0.7
         }
     }
+
     if req.system_prompt:
-        payload["system_prompt"] = req.system_prompt
-    if req.temperature is not None:
-        payload["generationConfig"]["temperature"] = req.temperature
-    # if req.extra_params:
-    #     payload["generationConfig"].update(req.extra_params)
+        payload["systemInstruction"] = {
+            "parts": [{"text": req.system_prompt}]
+        }
+
     async with httpx.AsyncClient() as client:
         url = PROVIDER_URLS["gemini"].format(model=req.model)
+        
         response = await client.post(
             f"{url}?key={api_key}",
             json=payload,
             timeout=30.0
         )
+
         if response.status_code != 200:
             raise HTTPException(status_code=response.status_code, detail=response.json())
+
         data = response.json()
-        return {"response": data["candidates"][0]["content"]["parts"][0]["text"], "model": req.model, "raw_data": data}
+
+        try:
+            if not data.get("candidates"):
+                return {"response": "[Response Blocked by Safety Filters]", "model": req.model, "raw_data": data}
+            
+            text_output = data["candidates"][0]["content"]["parts"][0]["text"]
+            return {
+                "response": text_output,
+                "model": req.model,
+                "raw_data": data
+            }
+        except (KeyError, IndexError):
+            raise HTTPException(status_code=500, detail="Unexpected response format from Gemini")
 
 async def call_cohere(api_key: str, req: ChatRequest) -> dict:
     messages = []

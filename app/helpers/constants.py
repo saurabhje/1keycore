@@ -10,7 +10,7 @@ PROVIDER_URLS = {
 PROVIDER_MODELS = {
     "openai":    ["gpt-4o", "gpt-4o-mini", "gpt-3.5-turbo"],
     "anthropic": ["claude-3-5-sonnet-20241022", "claude-3-haiku-20240307"],
-    "gemini":    ["gemini-1.5-pro", "gemini-1.5-flash"],
+    "gemini":    ["gemini-3.1-flash-preview", "gemini-2.5-flash-lite", "gemini-3.1-pro-preview"],
     "groq":      ["llama-3.1-8b-instant", "llama-3.3-70b-versatile", "openai/gpt-oss-120b"],
     "mistral":   ["mistral-large-latest", "mistral-small-latest"],
     "cohere":    ["command-r-plus", "command-r"],

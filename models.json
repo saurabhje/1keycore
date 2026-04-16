@@ -55,7 +55,7 @@
         }
       },
 
-      "google": {
+      "gemini": {
         "enabled": true,
         "models": {
           "economy": {
@@ -66,14 +66,14 @@
             "enabled": true
           },
           "standard": {
-            "id": "gemini-3.1-flash",
+            "id": "gemini-3-flash-preview",
             "speed": 0.94,
             "quality": 0.82,
             "cost": 0.4,
             "enabled": true
           },
           "premium": {
-            "id": "gemini-3.1-pro",
+            "id": "gemini-3.1-pro-preview",
             "speed": 0.65,
             "quality": 0.96,
             "cost": 0.9,
