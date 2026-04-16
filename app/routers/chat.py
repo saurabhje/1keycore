@@ -86,7 +86,7 @@ async def chat(
         cache_key = None
         cache_type = None
         cache_success = False
-        embedding = await run_in_threadpool(get_embeddings, request.message)
+        embedding = await get_embeddings(request.message)
         if should_cache:
             cache_key = create_key(tenant_id, request.model, request.message, request.max_tokens or DEFAULT_MAX_TOKENS, request.temperature or 0.0)
             cached_response = get_cache(cache_key)

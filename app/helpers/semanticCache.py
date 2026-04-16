@@ -26,7 +26,7 @@ def _coerce_embedding(embedding: np.ndarray) -> list[float]:
 
     return embedding.astype(np.float32).tolist()
 
-def get_embeddings(text: str) -> list[float]:
+async def get_embeddings(text: str) -> list[float]:
     result = client.feature_extraction(
         text,
         model="BAAI/bge-small-en"
