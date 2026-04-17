@@ -157,7 +157,13 @@ async def chat(
         if should_cache:
             set_cache(cache_key, llm_response["response"])
             await set_semantic_cache(db, tenant_id, request.model, request.system_prompt, embedding, llm_response["response"])
-        return {"response": llm_response["response"], "model": request.model, "cached": False}
+        return {
+            "response": llm_response["response"], 
+            "model": request.model, 
+            "cached":  cache_success,
+            "latency_ms": gateway_latency_ms,
+            "tokens": log_token
+}
     finally:
         release_concurrency(RedisKeys.concurrency_tenant(tenant_id))
         release_concurrency(RedisKeys.concurrency_user(tenant_id, user_id))
