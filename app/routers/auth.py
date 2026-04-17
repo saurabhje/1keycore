@@ -48,8 +48,9 @@ async def login(
         value=token,
         httponly=True, 
         secure=True,
-        samesite="none",
+        samesite="lax",
         max_age=24 * 3600,
+        domain='.saurabh.codes',
         path="/"
     )
     return {"access_token": token, "token_type": "bearer"}
@@ -64,6 +65,8 @@ async def logout(response: Response):
         key="access_token",
         httponly=True,
         secure=True,
-        samesite="none"
+        samesite="lax",
+        domain=".saurabh.codes",  
+        path="/"
     )
     return {"message": "Successfully logged out"}
