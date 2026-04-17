@@ -15,6 +15,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+@app.get("/")
+def say_Hello():
+    return { "message: ", "Hello World"}
 
 @app.on_event("startup")
 async def on_startup():
