@@ -10,7 +10,7 @@ app = FastAPI(title="1keycore",
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://1keycore.saurabh.codes", "http:1keyapi.saurabh.codes", "http://57.158.25.167"],
+    allow_origins=["https://1keycore.saurabh.codes", "http:1keyapi.saurabh.codes", "http://localhost:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
