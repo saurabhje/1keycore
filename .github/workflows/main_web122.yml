@@ -73,4 +73,5 @@ jobs:
         with:
           app-name: 'web122'
           slot-name: 'Production'
+          package: .
           
