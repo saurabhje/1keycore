@@ -1,7 +1,5 @@
 # 1KeyCore
 
-> One key. Every model. Full control.
-
 1KeyCore is a production-grade multi-tenant LLM gateway built from scratch. Companies (tenants) register their own LLM API keys, their employees get access via JWT auth, and the gateway handles everything in between — routing, rate limiting, caching, and usage tracking — all isolated per tenant.
 
 Built as a learning project to deeply understand how LLM infrastructure works at scale. Inspired by tools like Portkey and Helicone, but built ground up to understand every layer.
@@ -24,33 +22,8 @@ The naive approach to giving employees LLM access is handing out API keys direct
 ## How It Works
 
 ```
-Tenant admin registers their OpenAI / Anthropic / Gemini / Groq / Mistral / Cohere key
-                              ↓
-                  Key stored AES-256 encrypted in PostgreSQL
-                              ↓
-              Tenant shares their tenant_id with employees
-                              ↓
-                  Employees sign up and receive a JWT
-                              ↓
-              Employee sends POST /chat { message, model }
-                              ↓
-        JWT validated → tenant_id and user_id extracted
-                              ↓
-         Tenant rate limit checked (RPM + TPM + concurrency)
-                              ↓
-          User rate limit checked (RPM + TPM + concurrency)
-                              ↓
-              Exact cache checked → cache hit? Return instantly
-                              ↓
-          Semantic cache checked → similar query? Return cached
-                              ↓
-        Tenant's encrypted key fetched → decrypted → provider resolved
-                              ↓
-                    Request forwarded to LLM provider
-                              ↓
-             Response cached (exact + semantic) for future requests
-                              ↓
-                      Response returned to employee
+<img width="1440" height="1822" alt="image" src="https://github.com/user-attachments/assets/c980b1e0-0ebf-48da-8eae-a3d10a9c2c2d" />
+
 ```
 
 ---
@@ -367,12 +340,12 @@ For v1, hardcoding is a conscious tradeoff — simpler to build, easy to explain
 
 ## Roadmap
 
-- [ ] Usage tracking endpoint — tokens, cost, cache savings per tenant
-- [ ] Per-tenant spend limits and monthly budgets
+- [x] Usage tracking endpoint — tokens, cost, cache savings per tenant
+- [x] Per-tenant spend limits and monthly budgets
 - [ ] Model tier restrictions per tenant (free/pro/enterprise)
 - [ ] DB-driven provider and model registry (replace hardcoded dicts)
-- [ ] Docker Compose for local development
-- [ ] DigitalOcean deployment with health checks
+- [x] Docker Compose for local development
+- [x] Azure deployment with health checks
 - [ ] Webhook support for rate limit and spend alerts
 - [ ] SDK — Python and JavaScript wrappers around the REST API
 - [ ] Embedding-based complexity classifier to replace heuristic smart router
