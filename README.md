@@ -22,8 +22,7 @@ The naive approach to giving employees LLM access is handing out API keys direct
 ## How It Works
 
 ```
-<img width="1440" height="1822" alt="image" src="https://github.com/user-attachments/assets/c980b1e0-0ebf-48da-8eae-a3d10a9c2c2d" />
-
+![alt text](image.png)
 ```
 
 ---
@@ -298,26 +297,25 @@ API docs at `http://localhost:8000/docs`
 ├── requirements.txt
 ├── .env
 └── app/
-    ├── models.py              # SQLAlchemy models (Tenant, User, TenantAPIKey, SemanticCache)
-    ├── schemas.py             # Pydantic request/response schemas
-    ├── database.py            # Async engine, session, init_db
-    ├── security.py            # JWT, bcrypt, Fernet encryption/decryption
-    ├── dependencies.py        # get_current_user, get_admin_user FastAPI dependencies
-    ├── config.py              # Settings loaded from .env
-    ├── redis.py               # Upstash Redis client
+    ├── models.py             
+    ├── schemas.py             
+    ├── database.py            
+    ├── security.py           
+    ├── dependencies.py        
+    ├── config.py              
+    ├── redis.py               
     ├── routers/
-    │   ├── tenant.py          # POST /tenant
-    │   ├── auth.py            # POST /auth/register, /auth/login
-    │   ├── keys.py            # POST /keys (admin only)
-    │   └── chat.py            # POST /chat (main gateway endpoint)
-    └── helpers/
-        ├── constants.py       # Provider URLs, model lists, cost registry
-        ├── providers.py       # LLM provider call functions
-        ├── rate_limiter.py    # Token bucket, TPM counter, concurrency
-        ├── redis_keys.py      # RedisKeys class — versioned key generation
-        ├── cache.py           # Exact cache (Redis SHA-256)
-        ├── semantic_cache.py  # Semantic cache (pgvector cosine similarity)
-        └── router.py          # Smart routing — complexity scoring, tier mapping
+    │   ├── tenant.py          
+    │   ├── auth.py            
+    │   ├── keys.py            
+    │   └── chat.py            
+        ├── constants.py       
+        ├── providers.py       
+        ├── rate_limiter.py   
+        ├── redis_keys.py      
+        ├── cache.py          
+        ├── semantic_cache.py  
+        └── router.py
 ```
 
 ---
