@@ -22,7 +22,7 @@ The naive approach to giving employees LLM access is handing out API keys direct
 ## How It Works
 
 ```
-![alt text](image.png)
+[alt text](image.png)
 ```
 
 ---
