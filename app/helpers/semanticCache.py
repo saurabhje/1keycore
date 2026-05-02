@@ -70,23 +70,3 @@ async def get_semantic_cache(
 
     row = results.scalars().first()
     return row.response if row else None
-
-async def set_semantic_cache(
-        db: AsyncSession, 
-        tenant_id: str, 
-        model: str,
-        system_prompt: str | None, 
-        embedding: list[float],
-        response: str
-):
-    sp_hash = hash_message(system_prompt)
-
-    cache_entry = SemanticCache(
-        tenant_id=tenant_id,
-        model=model,
-        embedding=embedding,
-        system_prompt_hash=sp_hash,
-        response=response
-    )
-    db.add(cache_entry)
-    await db.commit()

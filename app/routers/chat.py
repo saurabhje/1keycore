@@ -1,5 +1,4 @@
 from fastapi import HTTPException, Depends, APIRouter, BackgroundTasks
-from fastapi.concurrency import run_in_threadpool
 import time
 from app.helpers.tokens import count_tokens, extract_tokens
 from app.schemas import ChatRequest, ChatResponse
@@ -14,9 +13,9 @@ from app.helpers.redis_keys import RedisKeys
 from app.helpers.constants import DEFAULT_MAX_TOKENS, PROVIDER_MODELS, PROVIDER_URLS
 from app.helpers.providers import call_anthropic, call_cohere, call_gemini, call_openai
 from app.helpers.cache import create_key, get_cache, set_cache
-from app.helpers.semanticCache import get_embeddings, get_semantic_cache, set_semantic_cache
+from app.helpers.semanticCache import get_embeddings, get_semantic_cache
 from app.helpers.modelRouter import get_best_model, score_complexity
-from app.helpers.task import save_log_request
+from app.helpers.task import save_log_request, semantic_save
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 user_rpm = 20
@@ -154,9 +153,10 @@ async def chat(
             safe_decr(tenant_tpm_key, -delta)
             safe_decr(user_tpm_key, -delta)
         
+            
         if should_cache:
             set_cache(cache_key, llm_response["response"])
-            await set_semantic_cache(db, tenant_id, request.model, request.system_prompt, embedding, llm_response["response"])
+            background_tasks.add_task(semantic_save, tenant_id, request.model, request.system_prompt, embedding, llm_response["response"])
         return {
             "response": llm_response["response"], 
             "model": request.model, 
